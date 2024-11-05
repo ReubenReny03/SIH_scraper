@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SIH Status Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .form-section, .qr-section {
+            flex: 1;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #qrcode {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+<body>
+    <h1>SIH Status Checker</h1>
+    <div class="container">
+        <div class="form-section">
+            <h2>Register for Updates</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="sihCode">SIH Code:</label>
+                    <input type="text" id="sihCode" name="sihCode" required>
+                </div>
+                <div class="form-group">
+                    <label for="phoneNumber">Phone Number (without +):</label>
+                    <input type="text" id="phoneNumber" name="phoneNumber" 
+                           placeholder="911234567890" required>
+                </div>
+                <button type="submit">Start Checking</button>
+            </form>
+            <div id="message"></div>
+        </div>
+        <div class="qr-section">
+            <h2>WhatsApp QR Code</h2>
+            <p>Scan this QR code with WhatsApp to enable notifications</p>
+            <div id="qrcode"></div>
+        </div>
+    </div>
+
+    <script>
+        // Check for QR code every 5 seconds
+        function updateQR() {
+            fetch('/qr')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.qr) {
+                        document.getElementById('qrcode').innerHTML = `
+                            <img src="${data.qr}" alt="WhatsApp QR Code">
+                        `;
+                    }
+                });
+        }
+
+        setInterval(updateQR, 5000);
+        updateQR();
+
+        // Handle form submission
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {
+                sihCode: formData.get('sihCode'),
+                phoneNumber: formData.get('phoneNumber')
+            };
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                const messageDiv = document.getElementById('message');
+                messageDiv.className = 'message success';
+                messageDiv.textContent = result.message;
+            } catch (error) {
+                const messageDiv = document.getElementById('message');
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'Error registering for updates';
+            }
+        });
+    </script>
+</body>
+</html> 
